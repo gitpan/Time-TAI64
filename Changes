@@ -1,5 +1,7 @@
 Revision history for Perl extension Time::TAI64.
 
+2.04  Thu Dec 02 2004
+        - Updated tests... below.
 2.03  Mon Nov 29
         - Change: tai64nlocal: used "%Y-%m-%d" instead of "%F"
 	  more portable, namely solaris strftime function does

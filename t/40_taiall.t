@@ -29,7 +29,7 @@ skip( $unless_TimeHiRes,
     my $nano = ($now - $secs) * 1e9;
     my $tai = unixtai64n($now);
     my $str1 = tai64nlocal($tai);
-    my $str2 = strftime("%F %H:%M:%S",localtime($now));
+    my $str2 = strftime("%Y-%m-%d %H:%M:%S",localtime($now));
     $str2 .= sprintf(".%09d",$nano);
     return ($str1 eq $str2);
   }
