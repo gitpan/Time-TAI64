@@ -321,7 +321,7 @@ sub tai64nlocal ($) {
         my $tok  = shift;
         my ($secs,$nano) = _decode_tai64n($tok);
         return ($secs == 0) ? '' : join('.',
-		strftime("%F %H:%M:%S",localtime($secs)),
+		strftime("%Y-%m-%d %H:%M:%S",localtime($secs)),
 		sprintf("%09d",$nano));
 }
 
