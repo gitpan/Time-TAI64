@@ -2,30 +2,29 @@ package Time::TAI64;
 
 =head1 NAME
 
-TAI64 - Perl extension for converting TAI64 strings into standard unix timestamps.
+Time::TAI64 - Perl extension for converting TAI64 strings into standard unix timestamps.
 
 =head1 SYNOPSIS
 
 Generate TAI64 timestamps
 
- use Time::TAI64;
- use Time::HiRes qw(time);
+  use Time::TAI64;
+  use Time::HiRes qw(time);
 
- $now = time; # High precision
- printf "%s\n", unixtai64n($now);
+  $now = time; # High precision
+  printf "%s\n", unixtai64n($now);
 
 Print out human readable logs
 
- use Time::TAI64;
+  use Time::TAI64;
 
- open FILE, "/var/log/multilog/stats";
- while(my $line = <FILE>) {
-   my($tai,$log) = split ' ',$line,2;
-   printf "%s %s\n",tai64nlocal($tai),$log;
- }
- close FILE;
+  open FILE, "/var/log/multilog/stats";
+  while(my $line = <FILE>) {
+    my($tai,$log) = split(' ',$line,2);
+    printf "%s %s\n",tai64nlocal($tai),$log;
+  }
+  close FILE;
  
-
 =head1 DESCRIPTION
 
 This is a package provides routines to convert TAI64 strings, like timestamps produced
@@ -47,10 +46,12 @@ require Exporter;
 @EXPORT = qw ( );
 @EXPORT_OK = qw(
  tai2unix
+ tai2strftime
  tai64unix
  tai64nunix
  tai64naunix
  tai64nlocal
+ tai64nsyslog
  unixtai64
  unixtai64n
  unixtai64na
@@ -63,11 +64,11 @@ $EXPORT_TAGS{'all'}     = [
  @{ $EXPORT_TAGS{'tai64'} },
  @{ $EXPORT_TAGS{'tai64n'} },
  @{ $EXPORT_TAGS{'tai64na'} },
- qw/ tai2unix /
+ qw/ tai2unix tai2strftime /
 ];
 
-$VERSION = '2.00';
-
+use POSIX qw(strftime);
+$VERSION = '2.02';
 
 #-----------
 #
@@ -134,7 +135,7 @@ sub _t4d ($) {
 
 #-----------
 #
-## decode_tai64n:
+## decode_tai64:
 ##   returns the number of seconds;
 ##
 #-----------
@@ -162,8 +163,8 @@ sub _decode_tai64n ($) {
 #-----------
 #
 ## decode_tai64na:
-##   returns a two element array containing the number
-##   of seconds and nanoseconds respectively.
+##   returns a three element array containing the number
+##   of seconds, nanoseconds, and attoseconds respectively.
 #-----------
 sub _decode_tai64na ($) {
         my $tok = shift;
@@ -177,8 +178,8 @@ sub _decode_tai64na ($) {
 #-----------
 #
 ## encode_tai64:
-##   returns a 8 character string tai64 encoded
-##   using the timestamp supplied:
+##   returns a 16 character string tai64 encoded
+##   using the timestamp supplied, preceded by '@'.
 #-----------
 sub _encode_tai64 ($) {
 	my $s = shift;
@@ -192,7 +193,7 @@ sub _encode_tai64 ($) {
 #
 ## encode_tai64n:
 ##   returns a 24 character string tai64n encoded
-##   using the timestamp supplied:
+##   using the timestamp supplied, preceded by '@'.
 #-----------
 sub _encode_tai64n ($$) {
 	my($s,$n) = @_;
@@ -206,7 +207,7 @@ sub _encode_tai64n ($$) {
 #
 ## encode_tai64na:
 ##   returns a 32 character string tai64na encoded
-##   using the timestamp supplied:
+##   using the timestamp supplied, preceded by '@'.
 #-----------
 sub _encode_tai64na ($$$) {
 	my($s,$n,$a) = @_;
@@ -239,16 +240,17 @@ sub tai2unix ($) {
 	return 0;
 }
  
-=item tai64unix ( $tai64n_string )
+=item tai64unix ( $tai64_string )
 
 This method converts the tai64 string given as its only parameter and
-if successfull, returns a value of I<timestamp> that is compatible
+if successfull, returns a value for I<timestamp> that is compatible
 with the value returned from C<time>.
 
 =cut
 
 sub tai64unix ($) {
 	my $tok = shift;
+	return 0 unless (length($tok) == 17);
 	my $s = &_decode_tai64($tok);
 	return $s;
 }
@@ -256,13 +258,14 @@ sub tai64unix ($) {
 =item tai64nunix ( $tai64n_string )
 
 This method converts the tai64n string given as its only parameter
-and if successfull, returns a value of I<timestamp> that is compatible
+and if successfull, returns a value for I<timestamp> that is compatible
 with the value returned from C<Time::HiRes::time>. 
 
 =cut
 
 sub tai64nunix ($) {
         my $tok = shift;
+	return 0 unless (length($tok) == 25);
         my($s,$n) = &_decode_tai64n($tok);
         $s += ($n/1e9);
         return $s;
@@ -271,32 +274,55 @@ sub tai64nunix ($) {
 =item tai64naunix ( $tai64na_string )
 
 This method converts the tai64na string given as its only parameter
-and if successfull, returns a value of I<timestamp> that is compatible
+and if successfull, returns a value for I<timestamp> that is compatible
 with the value returned from C<Time::HiRes::time>. 
 
 =cut
 
 sub tai64naunix ($) {
 	my $tok = shift;
+	return 0 unless (length($tok) == 33);
 	my ($s,$n,$a) = &_decode_tai64na($tok);
 	$n += ($a/1e9);
 	$s += ($n/1e9);
 	return $s;
 }
 
+=item tai64strftime ( $tai64_string, $format_string )
+
+This method converts the tai64, tai64n, or tai64na string given as its
+first parameter and, returns a formatted string of the converted I<timestamp>
+as formatted by its second parameter using strftime conventions.
+
+If this second parameter is ommited, it defaults to "%a %b %d %H:%M:%S %Y"
+which should print the timestamp as:
+Mon Nov  1 12:00:00 2004
+
+=cut
+
+sub tai2strftime ($) {
+	my $tok = shift;
+	my $fmt = shift || "%a %b %d %H:%M:%S %Y";
+	my $secs = &tai2unix($tok);
+	return ($secs == 0) ? '' : strftime($fmt,localtime($secs));
+}
+
 =item tai64nlocal ( $tai64n_string )
 
-This method converts the tai64n string given as its only parameter
-and if successfull, returns a formatted string of the converted I<timestamp>
-as would the result of scalar(localtime(I<timestamp>)). It returns
-an empty string if the conversion fails.
+This utility returns a string representing the tai64n timestamp
+converted to local time in ISO format: YYYY-MM-DD HH:MM:SS.SSSSSSSSS.
+
+The reason to include this funtion is to provide compatibility with the
+command-line version included in B<daemontools>.
 
 =cut
 
 sub tai64nlocal ($) {
         my $tok  = shift;
-        my $secs = &tai64nunix($tok);
-        return ($secs == 0) ? '' : scalar(localtime($secs));
+        my ($secs,$nano) = _decode_tai64n($tok);
+        return ($secs == 0) ? '' : join('.',
+		strftime("%F %H:%M:%S",localtime($secs)),
+		sprintf("%09d",$nano));
 }
 
 =item unixtai64 ( I<timestamp> )
@@ -315,17 +341,28 @@ sub unixtai64 ($) {
 
 =item unixtai64n ( I<seconds> , I<nanoseconds> )
 
-This methods returns a tai64n string using the parameters supplied by the user.
+This methods returns a tai64n string using the parameters supplied by the user
+making the following assumptions:
+
+=over 6
+
+=item *
 
 If I<seconds> and I<nanoseconds> are given, these values are used to compute
 the tai64n string. If I<nanoseconds> evaluates to more than 1 second, the value
 of both I<seconds> and I<nanoseconds> are reevaluated. Both I<seconds> and I<nanoseconds>
-are assumed to be integers, any factional part is truncated.
+are assumed to be integers, any fractional part is truncated.
+
+=item *
 
 If I<timestamp> is an integer, I<nanoseconds> is assumed to be 0.
 
+=item *
+
 If I<timestamp> is a C<real> number, the integer part is used for the I<seconds>
 and the fractional part is converted to I<nanoseconds>.
+
+=back
 
 =cut
 
@@ -351,13 +388,30 @@ sub unixtai64n ($;$) {
 
 =item unixtai64na ( I<seconds> , I<nanoseconds> , I<attoseconds> )
 
-This method returns a tai64na string unsing the parameters supplied by the user.
+This method returns a tai64na string unsing the parameters supplied by the
+user making the following assumptions:
 
-If I<seconds> and I<nanoseconds> and I<attoseconds> are given, these values are used
-to compute the tai64na string. If either I<nanoseconds> evaluates to more than 1 second,
-or I<attoseconds> evaluates to more than 1 nanosecond, then I<seconds>, I<nanoseconds>, and
-I<attoseconds> are reevaluated. These values are assumed to be integers, any fractional
-part is truncated.
+=over 6
+
+=item *
+
+If I<seconds>, I<nanoseconds> and I<attoseconds> are given, these values are
+used to compute the tai64na string. If either I<nanoseconds> evaluates to
+more than 1 second, or I<attoseconds> evaluates to more than 1 nanosecond,
+then I<seconds>, I<nanoseconds>, and I<attoseconds> are reevaluated. These
+values are assumed to be integers, any fractional part is truncated.
+
+=item *
+
+If I<timestamp> is an integer, both I<nanoseconds> and I<attoseconds> are
+assumed to be 0.
+
+=item *
+
+If I<timestamp> is a C<real> number, the integer part is used for the I<seconds>
+and the fractional part is converted to I<nanoseconds> amd I<attoseconds>.
+
+=back
 
 =cut
 
@@ -398,10 +452,17 @@ __END__
 =head1 SEE ALSO
 
 http://pobox.com/~djb/libtai/tai64.html
+http://cr.yp.to/daemontools.html
 
 =head1 AUTHOR
 
 Jorge Valdes, E<lt>jvaldes@intercom.com.svE<gt>
+
+=head1 HISTORY
+
+This module was started by AMS, but would not have been completed
+if Iain Truskett hadn't taken over. After his death, Jorge Valdes
+assumed ownership and rewrote it in Perl.
 
 =head1 COPYRIGHT AND LICENSE
 

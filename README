@@ -1,4 +1,4 @@
-Time-TAI64 version 2.00
+Time-TAI64 version 2.02
 =======================
 
 This Module makes available to the user functions to convert TAI64 strings
@@ -46,12 +46,13 @@ USEFULL
 
 COPYRIGHT AND LICENCE
 
-Put the correct copyright and licence information here.
-
 Copyright (C) 2004 by Jorge Valdes
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.3 or,
 at your option, any later version of Perl 5 you may have available.
 
+This module was started by AMS, but would not have been completed
+if Iain Truskett hadn't taken over. After his death, Jorge Valdes
+assumed ownership and rewrote it in Perl.
 

@@ -14,9 +14,11 @@ skip( $unless_TimeHiRes,
 
 skip( $unless_TimeHiRes,
   sub {
-    my $now = sprintf "%.6f",time;
+    use Time::HiRes qw(time);
+
+    my $now = sprintf "%.9f",time;
     my $tai = unixtai64na($now);
-    my $new = sprintf "%.6f",tai64naunix($tai);
+    my $new = sprintf "%.9f",tai64naunix($tai);
     return ($now == $new);
   }
 );

@@ -1,12 +1,15 @@
 use strict;
 use Test;
-plan tests => 12;
+plan tests => 11;
 
 eval "use Time::TAI64 qw(:tai64n)";
 ok( !$@ );
 
 eval "use Time::HiRes qw(time)";
 my $unless_TimeHiRes = $@ ? 'Time::HiRes not installed' : '';
+
+eval "use POSIX qw(strftime)";
+my $unless_POSIX = $@ ? 'POSIX not installed' : '';
 
 #
 ## Test Basic Stuff
@@ -16,20 +19,12 @@ ok( length(unixtai64n(time)), "25", "Invalid Length" );
 
 skip( $unless_TimeHiRes,
   sub {
+    use Time::HiRes qw(time);
+
     my $now = sprintf "%.6f",time;
     my $tai = unixtai64n($now);
     my $new = sprintf "%.6f",tai64nunix($tai);
     return ($now == $new);
-  }
-);
-
-skip( $unless_TimeHiRes,
-  sub {
-    my $now = sprintf "%.6f",time;
-    my $tai = unixtai64n($now);
-    my $a = scalar(localtime($now));
-    my $b = tai64nlocal($tai);
-    return ($a eq $b);
   }
 );
 
