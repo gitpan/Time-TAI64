@@ -1,0 +1,6 @@
+Revision history for Perl extension Time::TAI64.
+
+1.00  Mon Nov 15 16:19:51 2004
+	- original version; created by h2xs 1.23 with options
+		-b 5.8.0 -AX Time::TAI64
+
