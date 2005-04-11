@@ -8,20 +8,20 @@ Time::TAI64 - Perl extension for converting TAI64 strings into standard unix tim
 
 Generate TAI64 timestamps
 
-  use Time::TAI64;
-  use Time::HiRes qw(time);
+  use Time::TAI64 qw/tai64n/;
+  use Time::HiRes qw/time/;
 
   $now = time; # High precision
   printf "%s\n", unixtai64n($now);
 
 Print out human readable logs
 
-  use Time::TAI64;
+  use Time::TAI64 qw/:tai64n/;
 
   open FILE, "/var/log/multilog/stats";
   while(my $line = <FILE>) {
     my($tai,$log) = split(' ',$line,2);
-    printf "%s %s\n",tai64nlocal($tai),$log;
+    printf "%s %s",tai64nlocal($tai),$log;
   }
   close FILE;
  
@@ -38,7 +38,7 @@ use strict;
 
 use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION $AUTOLOAD);
 
-require 5.008;
+#require 5.008;
 require Exporter;
 
 @ISA = qw(Exporter);
@@ -57,18 +57,34 @@ require Exporter;
  unixtai64na
 );
 
-$EXPORT_TAGS{'tai64'}   = [ qw( tai64unix unixtai64 ) ];
-$EXPORT_TAGS{'tai64n'}  = [ qw( tai64nunix unixtai64n tai64nlocal ) ];
-$EXPORT_TAGS{'tai64na'} = [ qw( tai64naunix unixtai64na ) ];
+$EXPORT_TAGS{'tai'} = [
+ qw( tai2unix tai2strftime )
+];
+
+$EXPORT_TAGS{'tai64'} = [
+ @{ $EXPORT_TAGS{'tai'} },
+ qw( tai64unix unixtai64 )
+];
+
+$EXPORT_TAGS{'tai64n'}  = [
+ @{ $EXPORT_TAGS{'tai'} },
+ qw( tai64nunix unixtai64n tai64nlocal )
+];
+
+$EXPORT_TAGS{'tai64na'} = [
+ @{ $EXPORT_TAGS{'tai'} },
+ qw( tai64naunix unixtai64na )
+];
+
 $EXPORT_TAGS{'all'}     = [ 
+ @{ $EXPORT_TAGS{'tai'} },
  @{ $EXPORT_TAGS{'tai64'} },
  @{ $EXPORT_TAGS{'tai64n'} },
  @{ $EXPORT_TAGS{'tai64na'} },
- qw/ tai2unix tai2strftime /
 ];
 
 use POSIX qw(strftime);
-$VERSION = '2.02';
+$VERSION = '2.05';
 
 #-----------
 #
@@ -83,14 +99,14 @@ $VERSION = '2.02';
 ##   returns -1 on error.
 #-----------
 sub _h2i ($) {
-        my $c = shift;
-        my $oc = ord($c);
-        my $rv;
+	my $c = shift;
+	my $oc = ord($c);
+	my $rv;
 
-        return ($oc - ord('0')) if $c =~ m/\d/;
-        return ($oc - ord('A') + 10) if $c =~ m/[A-F]/;
-        return ($oc - ord('a') + 10) if $c =~ m/[a-f]/;
-        return -1;
+	return ($oc - ord('0')) if $c =~ m/\d/;
+	return ($oc - ord('A') + 10) if $c =~ m/[A-F]/;
+	return ($oc - ord('a') + 10) if $c =~ m/[a-f]/;
+	return -1;
 }
 
 #-----------
@@ -121,10 +137,10 @@ sub _td ($$) {
 ##   returns 0 if the hex-part is invalid.
 #-----------
 sub _t8d ($) {
-        my $s = shift;
-        return 0 unless length($s) == 16;
-        my $d = _td($s,8);
-        return $d;
+	my $s = shift;
+	return 0 unless length($s) == 16;
+	my $d = _td($s,8);
+	return $d;
 }
 sub _t4d ($) {
 	my $s = shift;
@@ -140,10 +156,10 @@ sub _t4d ($) {
 ##
 #-----------
 sub _decode_tai64 ($) {
-        my $tok = shift;
-        return (0) unless $tok =~ m/^\@40000000/;
-        my $secs = _t4d(substr($tok,9,8));
-        return($secs);
+	my $tok = shift;
+	return (0) unless $tok =~ m/^\@40000000/;
+	my $secs = _t4d(substr($tok,9,8));
+	return($secs);
 }
 
 #-----------
@@ -153,11 +169,11 @@ sub _decode_tai64 ($) {
 ##   of seconds and nanoseconds respectively.
 #-----------
 sub _decode_tai64n ($) {
-        my $tok = shift;
-        return (0,0) unless $tok =~ m/^\@40000000/;
-        my $secs = _t4d(substr($tok,9,8));
-        my $nano = _t4d(substr($tok,17,8));
-        return($secs,$nano);
+	my $tok = shift;
+	return (0,0) unless $tok =~ m/^\@40000000/;
+	my $secs = _t4d(substr($tok,9,8));
+	my $nano = _t4d(substr($tok,17,8));
+	return($secs,$nano);
 }
 
 #-----------
@@ -167,12 +183,12 @@ sub _decode_tai64n ($) {
 ##   of seconds, nanoseconds, and attoseconds respectively.
 #-----------
 sub _decode_tai64na ($) {
-        my $tok = shift;
-        return (0,0,0) unless $tok =~ m/^\@40000000/;
-        my $secs = _t4d(substr($tok,9,8));
-        my $nano = _t4d(substr($tok,17,8));
+	my $tok = shift;
+	return (0,0,0) unless $tok =~ m/^\@40000000/;
+	my $secs = _t4d(substr($tok,9,8));
+	my $nano = _t4d(substr($tok,17,8));
 	my $atto = _t4d(substr($tok,25,8));
-        return($secs,$nano,$atto);
+	return($secs,$nano,$atto);
 }
 
 #-----------
@@ -219,9 +235,15 @@ sub _encode_tai64na ($$$) {
 
 =head1 EXPORTS
 
-The following functions are available to the user:
+In order to use any of these functions, they must be properly imported
+by using any of the following tags to use related functions:
+
 
 =over 4
+
+=item :tai
+
+Generic Functions
 
 =item tai2unix ( $tai_string )
 
@@ -239,7 +261,30 @@ sub tai2unix ($) {
 	return int(tai64naunix($tok)) if length($tok) == 33;
 	return 0;
 }
- 
+
+=item tai2strftime ( $tai64_string, $format_string )
+
+This method converts the tai64, tai64n, or tai64na string given as its
+first parameter and, returns a formatted string of the converted I<timestamp>
+as formatted by its second parameter using strftime conventions.
+
+If this second parameter is ommited, it defaults to "%a %b %d %H:%M:%S %Y"
+which should print the timestamp as:
+Mon Nov  1 12:00:00 2004
+
+=cut
+
+sub tai2strftime ($;$) {
+	my $tok = shift;
+	my $fmt = shift || "%a %b %d %H:%M:%S %Y";
+	my $secs = &tai2unix($tok);
+	return ($secs == 0) ? '' : strftime($fmt,localtime($secs));
+}
+
+=item :tai64
+
+TAI64 Functions as well as Generic Functions
+
 =item tai64unix ( $tai64_string )
 
 This method converts the tai64 string given as its only parameter and
@@ -255,76 +300,6 @@ sub tai64unix ($) {
 	return $s;
 }
 
-=item tai64nunix ( $tai64n_string )
-
-This method converts the tai64n string given as its only parameter
-and if successfull, returns a value for I<timestamp> that is compatible
-with the value returned from C<Time::HiRes::time>. 
-
-=cut
-
-sub tai64nunix ($) {
-        my $tok = shift;
-	return 0 unless (length($tok) == 25);
-        my($s,$n) = &_decode_tai64n($tok);
-        $s += ($n/1e9);
-        return $s;
-}
-
-=item tai64naunix ( $tai64na_string )
-
-This method converts the tai64na string given as its only parameter
-and if successfull, returns a value for I<timestamp> that is compatible
-with the value returned from C<Time::HiRes::time>. 
-
-=cut
-
-sub tai64naunix ($) {
-	my $tok = shift;
-	return 0 unless (length($tok) == 33);
-	my ($s,$n,$a) = &_decode_tai64na($tok);
-	$n += ($a/1e9);
-	$s += ($n/1e9);
-	return $s;
-}
-
-=item tai64strftime ( $tai64_string, $format_string )
-
-This method converts the tai64, tai64n, or tai64na string given as its
-first parameter and, returns a formatted string of the converted I<timestamp>
-as formatted by its second parameter using strftime conventions.
-
-If this second parameter is ommited, it defaults to "%a %b %d %H:%M:%S %Y"
-which should print the timestamp as:
-Mon Nov  1 12:00:00 2004
-
-=cut
-
-sub tai2strftime ($) {
-	my $tok = shift;
-	my $fmt = shift || "%a %b %d %H:%M:%S %Y";
-	my $secs = &tai2unix($tok);
-	return ($secs == 0) ? '' : strftime($fmt,localtime($secs));
-}
-
-=item tai64nlocal ( $tai64n_string )
-
-This utility returns a string representing the tai64n timestamp
-converted to local time in ISO format: YYYY-MM-DD HH:MM:SS.SSSSSSSSS.
-
-The reason to include this funtion is to provide compatibility with the
-command-line version included in B<daemontools>.
-
-=cut
-
-sub tai64nlocal ($) {
-        my $tok  = shift;
-        my ($secs,$nano) = _decode_tai64n($tok);
-        return ($secs == 0) ? '' : join('.',
-		strftime("%Y-%m-%d %H:%M:%S",localtime($secs)),
-		sprintf("%09d",$nano));
-}
-
 =item unixtai64 ( I<timestamp> )
 
 This method converts a unix timestamp into a TAI64 string.
@@ -335,6 +310,26 @@ sub unixtai64 ($) {
 	my $secs = shift;
 	return '' if ($secs == 0);
 	return &_encode_tai64(int($secs));
+}
+
+=item :ta64n
+
+TAI64N Functions as well as Generic Functions
+
+=item tai64nunix ( $tai64n_string )
+
+This method converts the tai64n string given as its only parameter
+and if successfull, returns a value for I<timestamp> that is compatible
+with the value returned from C<Time::HiRes::time>. 
+
+=cut
+
+sub tai64nunix ($) {
+	my $tok = shift;
+	return 0 unless (length($tok) == 25);
+	my($s,$n) = &_decode_tai64n($tok);
+	$s += ($n/1e9);
+	return $s;
 }
 
 =item unixtai64n ( I<timestamp> )
@@ -382,6 +377,45 @@ sub unixtai64n ($;$) {
 
 	return '' if ($secs == 0 && $nano == 0);
 	return &_encode_tai64n(int($secs),int($nano));
+}
+
+=item tai64nlocal ( $tai64n_string )
+
+This utility returns a string representing the tai64n timestamp
+converted to local time in ISO format: YYYY-MM-DD HH:MM:SS.SSSSSSSSS.
+
+The reason to include this funtion is to provide compatibility with the
+command-line version included in B<daemontools>.
+
+=cut
+
+sub tai64nlocal ($) {
+	my $tok  = shift;
+	my ($secs,$nano) = _decode_tai64n($tok);
+	return ($secs == 0) ? '' : join('.',
+		strftime("%Y-%m-%d %H:%M:%S",localtime($secs)),
+		sprintf("%09d",$nano));
+}
+
+=item :tai64na
+
+TAI64NA Functions as well as Generic Functions
+
+=item tai64naunix ( $tai64na_string )
+
+This method converts the tai64na string given as its only parameter
+and if successfull, returns a value for I<timestamp> that is compatible
+with the value returned from C<Time::HiRes::time>. 
+
+=cut
+
+sub tai64naunix ($) {
+	my $tok = shift;
+	return 0 unless (length($tok) == 33);
+	my ($s,$n,$a) = &_decode_tai64na($tok);
+	$n += ($a/1e9);
+	$s += ($n/1e9);
+	return $s;
 }
 
 =item unixtai64na ( I<timestamp> )
@@ -452,11 +486,12 @@ __END__
 =head1 SEE ALSO
 
 http://pobox.com/~djb/libtai/tai64.html
+
 http://cr.yp.to/daemontools.html
 
 =head1 AUTHOR
 
-Jorge Valdes, E<lt>jvaldes@intercom.com.svE<gt>
+Jorge Valdes, E<lt>jorge@joval.infoE<gt>
 
 =head1 HISTORY
 
@@ -466,7 +501,7 @@ assumed ownership and rewrote it in Perl.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2004 by Jorge Valdes
+Copyright (C) 2004-2005 by Jorge Valdes
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.3 or,

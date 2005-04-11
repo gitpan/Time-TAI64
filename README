@@ -1,4 +1,4 @@
-Time-TAI64 version 2.02
+Time-TAI64 version 2.05
 =======================
 
 This Module makes available to the user functions to convert TAI64 strings
@@ -15,9 +15,14 @@ tai64naunix   - converts TAI64NA string to unix timestamp
 ta64nlocal    - converts a TAI64N string and returns a string formated with
                 scalar(localtime(&tai64nunix($arg))). This is just helpfull
                 when dealing with multilog files.
+
 tai2unix      - converts any TAI64/TAI64N/TAI64NA string into a unix timestamp
                 returning only an integer with the number of seconds since
                 Jan 1, 1970.
+
+tai2strftime  - converts any TAI64/TAI64N/TAI64NA string into a unix timestamp
+                formatted using POSIX(strftime) with a default format string
+				of "%a %b %d %H:%M:%S %Y"
 
 TAI64 strings require the '@' character preceding the actual string to be
 properly recognized.  This allows easy integration with multilog generated
@@ -26,10 +31,11 @@ files.
 The following TAGS have been defined to import only the necesary functions
 into the user namespace:
 
-tai64     - unixtai64, tai64unix
-tai64n    - unixtai64n tai64nunix tai64nlocal
-tai64na   - unixtai64na tai64naunix
-all       - :tai64 :tai64n :tai64na tai2unix
+tai       - tai2unix, tai2strftime
+tai64     - :tai, unixtai64,   tai64unix
+tai64n    - :tai, unixtai64n,  tai64nunix,  tai64nlocal
+tai64na   - :tai, unixtai64na, tai64naunix
+all       - :tai, :tai64, :tai64n, :tai64na
 
 INSTALLATION
 
