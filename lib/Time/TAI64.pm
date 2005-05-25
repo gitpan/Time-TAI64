@@ -51,7 +51,6 @@ require Exporter;
  tai64nunix
  tai64naunix
  tai64nlocal
- tai64nsyslog
  unixtai64
  unixtai64n
  unixtai64na
@@ -84,7 +83,7 @@ $EXPORT_TAGS{'all'}     = [
 ];
 
 use POSIX qw(strftime);
-$VERSION = '2.05';
+$VERSION = '2.06';
 
 #-----------
 #

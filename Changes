@@ -1,5 +1,9 @@
 Revision history for Perl extension Time::TAI64.
 
+2.06  Wed May 25 2005
+    - Removed 'tai64nsyslog' from @EXPORT. The function
+      does not exist.
+
 2.05  Mon Apr 11 2005
 	- Removed 'require 5.008' This should work with older
 	  versions of perl.
