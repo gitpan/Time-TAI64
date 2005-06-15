@@ -1,5 +1,9 @@
 Revision history for Perl extension Time::TAI64.
 
+2.07  Tue Jun 14 2005
+    - Removed use 5.008; from Makefile.PL this should really
+	  make it work with 'older' versions of PERL.
+
 2.06  Wed May 25 2005
     - Removed 'tai64nsyslog' from @EXPORT. The function
       does not exist.
