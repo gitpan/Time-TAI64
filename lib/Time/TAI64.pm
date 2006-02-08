@@ -1,4 +1,5 @@
 package Time::TAI64;
+# vim: et ts=4
 
 =head1 NAME
 
@@ -43,7 +44,7 @@ require Exporter;
 
 @ISA = qw(Exporter);
 
-@EXPORT = qw ( );
+@EXPORT = ();
 @EXPORT_OK = qw(
  tai2unix
  tai2strftime
@@ -83,7 +84,7 @@ $EXPORT_TAGS{'all'}     = [
 ];
 
 use POSIX qw(strftime);
-$VERSION = '2.06';
+$VERSION = '2.10';
 
 #-----------
 #
@@ -93,72 +94,17 @@ $VERSION = '2.06';
 
 #-----------
 #
-## h2i: hex to integer
-##   returns the integer from a hexdigit.
-##   returns -1 on error.
-#-----------
-sub _h2i ($) {
-	my $c = shift;
-	my $oc = ord($c);
-	my $rv;
-
-	return ($oc - ord('0')) if $c =~ m/\d/;
-	return ($oc - ord('A') + 10) if $c =~ m/[A-F]/;
-	return ($oc - ord('a') + 10) if $c =~ m/[a-f]/;
-	return -1;
-}
-
-#-----------
-#
-## td: tai_part to decimal
-##   returns the decimal portion of the hex-part
-##     upto $l hex-digits.
-##   returns 0 if the hex-part is invalid.
-#-----------
-sub _td ($$) {
-	my $s = shift;
-	my $l = shift;
-	my $d = 0;
-	for my $ix (0 .. $l*2-1) {
-		my $pw = 4 * ($l*2 - $ix - 1);
-		my $b = &_h2i(substr($s,$ix,1));
-		return 0 if ($b < 0);
-		$d |= $b << $pw;
-	}
-	return $d ;
-}
-
-#-----------
-#
-## t8d: tai_part to decimal
-## t4d: tai_part to decimal
-##   returns the decimal portion of the hex-part
-##   returns 0 if the hex-part is invalid.
-#-----------
-sub _t8d ($) {
-	my $s = shift;
-	return 0 unless length($s) == 16;
-	my $d = _td($s,8);
-	return $d;
-}
-sub _t4d ($) {
-	my $s = shift;
-	return 0 unless length($s) == 8;
-	my $d = _td($s,4);
-	return $d;
-}
-
-#-----------
-#
 ## decode_tai64:
 ##   returns the number of seconds;
 ##
 #-----------
 sub _decode_tai64 ($) {
-	my $tok = shift;
-	return (0) unless $tok =~ m/^\@40000000/;
-	my $secs = _t4d(substr($tok,9,8));
-	return($secs);
+    my $tok = shift;
+    my $secs = 0;
+    if (substr($tok,0,9) eq '@40000000') {
+        $secs = hex(substr($tok,9,8))
+    }
+    return $secs;
 }
 
 #-----------
@@ -168,11 +114,14 @@ sub _decode_tai64 ($) {
 ##   of seconds and nanoseconds respectively.
 #-----------
 sub _decode_tai64n ($) {
-	my $tok = shift;
-	return (0,0) unless $tok =~ m/^\@40000000/;
-	my $secs = _t4d(substr($tok,9,8));
-	my $nano = _t4d(substr($tok,17,8));
-	return($secs,$nano);
+    my $tok = shift;
+    my $secs = 0;
+    my $nano = 0;
+    if (substr($tok, 0, 9) eq '@40000000') {
+        $secs = hex(substr($tok,9,8));
+        $nano = hex(substr($tok,17,8));
+    }
+    return ($secs,$nano);
 }
 
 #-----------
@@ -182,12 +131,16 @@ sub _decode_tai64n ($) {
 ##   of seconds, nanoseconds, and attoseconds respectively.
 #-----------
 sub _decode_tai64na ($) {
-	my $tok = shift;
-	return (0,0,0) unless $tok =~ m/^\@40000000/;
-	my $secs = _t4d(substr($tok,9,8));
-	my $nano = _t4d(substr($tok,17,8));
-	my $atto = _t4d(substr($tok,25,8));
-	return($secs,$nano,$atto);
+    my $tok = shift;
+    my $secs = 0;
+    my $nano = 0;
+    my $atto = 0;
+    if (substr($tok, 0, 9) eq '@40000000') {
+        $secs = hex(substr($tok,9,8));
+        $nano = hex(substr($tok,17,8));
+        $atto = hex(substr($tok,25,8));
+    }
+    return ($secs,$nano,$atto);
 }
 
 #-----------
@@ -197,11 +150,9 @@ sub _decode_tai64na ($) {
 ##   using the timestamp supplied, preceded by '@'.
 #-----------
 sub _encode_tai64 ($) {
-	my $s = shift;
-	my @t = ();
-	push @t, '@40000000';
-	push @t, sprintf("%08x",$s);
-	return (join('',@t));
+    my $s = shift;
+    my $t = '@40000000'. sprintf("%08x",$s);
+    return $t;
 }
 
 #-----------
@@ -211,11 +162,9 @@ sub _encode_tai64 ($) {
 ##   using the timestamp supplied, preceded by '@'.
 #-----------
 sub _encode_tai64n ($$) {
-	my($s,$n) = @_;
-	my @t = ();
-	push @t, _encode_tai64($s);
-	push @t, sprintf("%08x",$n);
-	return (join('',@t));
+    my($s,$n) = @_;
+    my $t = _encode_tai64($s) . sprintf("%08x",$n);
+    return $t;
 }
 
 #-----------
@@ -225,11 +174,9 @@ sub _encode_tai64n ($$) {
 ##   using the timestamp supplied, preceded by '@'.
 #-----------
 sub _encode_tai64na ($$$) {
-	my($s,$n,$a) = @_;
-	my @t = ();
-	push @t, _encode_tai64n($s,$n);
-	push @t, sprintf("%08x",$a);
-	return (join('',@t));
+    my($s,$n,$a) = @_;
+    my $t = _encode_tai64n($s,$n) . sprintf("%08x",$a);
+    return $t;
 }
 
 =head1 EXPORTS
@@ -254,11 +201,11 @@ C<time> function. If an error occurs, the function returns a 0.
 =cut
 
 sub tai2unix ($) {
-	my $tok = shift;
-	return int(tai64unix($tok))   if length($tok) == 17;
-	return int(tai64nunix($tok))  if length($tok) == 25;
-	return int(tai64naunix($tok)) if length($tok) == 33;
-	return 0;
+    my $tok = shift;
+    return int(tai64unix($tok))   if length($tok) == 17;
+    return int(tai64nunix($tok))  if length($tok) == 25;
+    return int(tai64naunix($tok)) if length($tok) == 33;
+    return 0;
 }
 
 =item tai2strftime ( $tai64_string, $format_string )
@@ -274,10 +221,10 @@ Mon Nov  1 12:00:00 2004
 =cut
 
 sub tai2strftime ($;$) {
-	my $tok = shift;
-	my $fmt = shift || "%a %b %d %H:%M:%S %Y";
-	my $secs = &tai2unix($tok);
-	return ($secs == 0) ? '' : strftime($fmt,localtime($secs));
+    my $tok = shift;
+    my $fmt = shift || "%a %b %d %H:%M:%S %Y";
+    my $secs = tai2unix($tok);
+    return ($secs == 0) ? '' : strftime($fmt,localtime($secs));
 }
 
 =item :tai64
@@ -293,10 +240,10 @@ with the value returned from C<time>.
 =cut
 
 sub tai64unix ($) {
-	my $tok = shift;
-	return 0 unless (length($tok) == 17);
-	my $s = &_decode_tai64($tok);
-	return $s;
+    my $tok = shift;
+    return 0 unless (length($tok) == 17);
+    my $s = _decode_tai64($tok);
+    return $s;
 }
 
 =item unixtai64 ( I<timestamp> )
@@ -306,9 +253,9 @@ This method converts a unix timestamp into a TAI64 string.
 =cut
 
 sub unixtai64 ($) {
-	my $secs = shift;
-	return '' if ($secs == 0);
-	return &_encode_tai64(int($secs));
+    my $secs = shift;
+    return '' if ($secs == 0);
+    return _encode_tai64(int($secs));
 }
 
 =item :ta64n
@@ -324,11 +271,11 @@ with the value returned from C<Time::HiRes::time>.
 =cut
 
 sub tai64nunix ($) {
-	my $tok = shift;
-	return 0 unless (length($tok) == 25);
-	my($s,$n) = &_decode_tai64n($tok);
-	$s += ($n/1e9);
-	return $s;
+    my $tok = shift;
+    return 0 unless (length($tok) == 25);
+    my($s,$n) = _decode_tai64n($tok);
+    $s += ($n/1e9);
+    return $s;
 }
 
 =item unixtai64n ( I<timestamp> )
@@ -361,21 +308,20 @@ and the fractional part is converted to I<nanoseconds>.
 =cut
 
 sub unixtai64n ($;$) {
-	my($secs,$nano) = @_;
+    my($secs,$nano) = @_;
 
-	if (defined($nano)) {
-		if ($nano >= 1e9) {
-			my $a = $nano / 1e9;
-			$secs += int($a);
-			$nano  = $a - 1;
-		}
-	} else {
-		$nano = ($secs - int($secs)); 
-		$nano *= 1e9;
-	}
+    if (defined($nano)) {
+        if ($nano >= 1e9) {
+            $secs += int($nano / 1e9);
+            $nano  = ($nano % 1e9);
+        }
+    } else {
+        $nano = ($secs - int($secs)); 
+        $nano *= 1e9;
+    }
 
-	return '' if ($secs == 0 && $nano == 0);
-	return &_encode_tai64n(int($secs),int($nano));
+    return '' if ($secs == 0 && $nano == 0);
+    return _encode_tai64n(int($secs),int($nano));
 }
 
 =item tai64nlocal ( $tai64n_string )
@@ -389,11 +335,12 @@ command-line version included in B<daemontools>.
 =cut
 
 sub tai64nlocal ($) {
-	my $tok  = shift;
-	my ($secs,$nano) = _decode_tai64n($tok);
-	return ($secs == 0) ? '' : join('.',
-		strftime("%Y-%m-%d %H:%M:%S",localtime($secs)),
-		sprintf("%09d",$nano));
+    my $tok  = shift;
+    my ($secs,$nano) = _decode_tai64n($tok);
+    my $x = ($secs ==0) ? '' : 
+        strftime("%Y-%m-%d %H:%M:%S",localtime($secs)) .
+        sprintf("%09d",$nano);
+    return($x);
 }
 
 =item :tai64na
@@ -409,12 +356,12 @@ with the value returned from C<Time::HiRes::time>.
 =cut
 
 sub tai64naunix ($) {
-	my $tok = shift;
-	return 0 unless (length($tok) == 33);
-	my ($s,$n,$a) = &_decode_tai64na($tok);
-	$n += ($a/1e9);
-	$s += ($n/1e9);
-	return $s;
+    my $tok = shift;
+    return 0 unless (length($tok) == 33);
+    my ($s,$n,$a) = _decode_tai64na($tok);
+    $n += ($a/1e9);
+    $s += ($n/1e9);
+    return $s;
 }
 
 =item unixtai64na ( I<timestamp> )
@@ -449,30 +396,30 @@ and the fractional part is converted to I<nanoseconds> amd I<attoseconds>.
 =cut
 
 sub unixtai64na ($;$$) {
-	my($secs,$nano,$atto) = @_;
+    my($secs,$nano,$atto) = @_;
 
-	if (defined($nano)) {
-		if ($nano >= 1e9) {
-			$secs += int($nano / 1e9);
-			$nano  = ($nano % 1e9);
-		}
-	} else {
-		$nano = ($secs - int($secs)); 
-		$nano *= 1e9;
-	}
+    if (defined($nano)) {
+        if ($nano >= 1e9) {
+            $secs += int($nano / 1e9);
+            $nano  = ($nano % 1e9);
+        }
+    } else {
+        $nano = ($secs - int($secs)); 
+        $nano *= 1e9;
+    }
 
-	if (defined($atto)) {
-		if ($atto >= 1e9) {
-			$nano += int($atto / 1e9);
-			$atto  = ($atto % 1e9);
-		}
-	} else {
-		$atto = ($nano - int($nano)); 
-		$atto *= 1e9;
-	}
+    if (defined($atto)) {
+        if ($atto >= 1e9) {
+            $nano += int($atto / 1e9);
+            $atto  = ($atto % 1e9);
+        }
+    } else {
+        $atto = ($nano - int($nano)); 
+        $atto *= 1e9;
+    }
 
-	return '' if ($secs == 0 and $nano == 0 and $atto == 0);
-	return &_encode_tai64na(int($secs),int($nano),int($atto));
+    return '' if ($secs == 0 and $nano == 0 and $atto == 0);
+    return _encode_tai64na(int($secs),int($nano),int($atto));
 }
 
 #-----
@@ -500,7 +447,7 @@ assumed ownership and rewrote it in Perl.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2004-2005 by Jorge Valdes
+Copyright (C) 2004-2006 by Jorge Valdes
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.3 or,

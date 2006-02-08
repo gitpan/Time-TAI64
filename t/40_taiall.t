@@ -1,37 +1,34 @@
 use strict;
-use Test;
+use Test::More
+  tests => 8;
 
-plan tests => 5;
+BEGIN { use_ok('POSIX',qw/strftime/) }
+BEGIN { use_ok('Time::TAI64',qw/:all/) }
+BEGIN {
+  is( length(unixtai64(time)), 17, "Invalid Length");
+  is( length(unixtai64n(time)), 25, "Invalid Length");
+  is( length(unixtai64na(time)), 33, "Invalid Length");
+}
 
-eval "use Time::TAI64 qw(:all)";
-ok( !$@ );
+SKIP: {
+  eval { use Time::HiRes qw/time/ };
+  skip "Cannot locad Time::HiRes", 3 if $@;
 
-eval "use Time::HiRes qw(time)";
-my $unless_TimeHiRes = $@ ? 'Time::HiRes not installed' : '';
+  my $now = time;
 
-ok( length(unixtai64(int(time))), 17 );
+  my $tst = int($now);
+  my $tai = unixtai64(int($now));
+  my $new = tai64unix($tai);
+  cmp_ok ($tst, '==', $new, "Compare tai64 $now");
 
-skip( $unless_TimeHiRes,
-  length(unixtai64n(time)) == 25
-);
+  $tst = sprintf("%.6f",$now);
+  $tai = unixtai64n($tst);
+  $new = tai64nunix($tai);
+  cmp_ok ($tst, '==', $new, "Compare tai64n $now");
 
-skip( $unless_TimeHiRes,
-  length(unixtai64na(time)) == 33
-);
+  $tst = sprintf("%.12f",$now);
+  $tai = unixtai64na($tst);
+  $new = tai64naunix($tai);
+  cmp_ok ($now, '==', $new, "Compare tai64n $now");
 
-skip( $unless_TimeHiRes,
-  sub {
-    use POSIX qw(strftime);
-    use Time::HiRes qw(time);
-
-    my $now = sprintf "%.6f",time;
-    my $secs = int($now);
-    my $nano = ($now - $secs) * 1e9;
-    my $tai = unixtai64n($now);
-    my $str1 = tai64nlocal($tai);
-    my $str2 = strftime("%Y-%m-%d %H:%M:%S",localtime($now));
-    $str2 .= sprintf(".%09d",$nano);
-    return ($str1 eq $str2);
-  }
-);
-
+}

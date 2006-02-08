@@ -1,43 +1,35 @@
 use strict;
-use Test;
-plan tests => 11;
+use Test::More
+  tests => 12;
 
-eval "use Time::TAI64 qw(:tai64n)";
-ok( !$@ );
+BEGIN { use_ok('POSIX',qw/strftime/) }
+BEGIN { use_ok('Time::TAI64',qw/:tai64n/) }
+BEGIN {
+  is( length(unixtai64n(time)), 25, "Invalid Length" );
+}
 
-eval "use Time::HiRes qw(time)";
-my $unless_TimeHiRes = $@ ? 'Time::HiRes not installed' : '';
+SKIP: {
+  eval {use Time::HiRes qw(time)};
+  skip "Cannot Load Time::HiRes", 9 if $@;
 
-eval "use POSIX qw(strftime)";
-my $unless_POSIX = $@ ? 'POSIX not installed' : '';
+  #
+  ## Well Known TAI64N Strings
+  ##
 
-#
-## Test Basic Stuff
-##
+  is( unixtai64n(1), '@400000000000000100000000', 'unixtai64n(1)'  );
+  is( unixtai64n(1,500_000_000), '@40000000000000011dcd6500', 'unixtai64n(1,500_000_000)' );
+  is( unixtai64n(1.194785), '@40000000000000010b9c2ee8', 'unixtai64n(1.194785)' );
+  is( unixtai64n(1.784526), '@40000000000000012ec2eab0', 'unixtai64n(1.784526)' );
 
-ok( length(unixtai64n(time)), "25", "Invalid Length" );
+  is( sprintf("%.6f",tai64nunix('@400000000000000100000000')), "1.000000" );
+  is( sprintf("%.6f",tai64nunix('@40000000000000011dcd6500')), "1.500000" );
+  is( sprintf("%.6f",tai64nunix('@40000000000000010b9c2ee8')), "1.194785" );
+  is( sprintf("%.6f",tai64nunix('@40000000000000012ec2eab0')), "1.784526" );
 
-skip( $unless_TimeHiRes,
-  sub {
-    use Time::HiRes qw(time);
+  my $now = sprintf "%.6f",time;
+  my $tai = unixtai64n($now);
+  my $new = sprintf "%.6f",tai64nunix($tai);
 
-    my $now = sprintf "%.6f",time;
-    my $tai = unixtai64n($now);
-    my $new = sprintf "%.6f",tai64nunix($tai);
-    return ($now == $new);
-  }
-);
+  cmp_ok( $now, '==', $new, "Compare $now" );
+}
 
-#
-## Well Known TAI64N Strings
-##
-
-ok( unixtai64n(1), '@400000000000000100000000', 'unixtai64n(1)'  );
-ok( unixtai64n(1,500_000_000), '@40000000000000011dcd6500', 'unixtai64n(1,500_000_000)' );
-ok( unixtai64n(1.194785), '@40000000000000010b9c2ee8', 'unixtai64n(1.194785)' );
-ok( unixtai64n(1.784526), '@40000000000000012ec2eab0', 'unixtai64n(1.784526)' );
-
-ok( sprintf("%.6f",tai64nunix('@400000000000000100000000')), "1.000000" );
-ok( sprintf("%.6f",tai64nunix('@40000000000000011dcd6500')), "1.500000" );
-ok( sprintf("%.6f",tai64nunix('@40000000000000010b9c2ee8')), "1.194785" );
-ok( sprintf("%.6f",tai64nunix('@40000000000000012ec2eab0')), "1.784526" );

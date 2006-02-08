@@ -1,25 +1,21 @@
 use strict;
-use Test;
-plan tests => 3;
+use Test::More
+ tests => 4;
 
-eval "use Time::TAI64 qw(:tai64na)";
-ok( !$@ );
+BEGIN { use_ok('POSIX',qw/strftime/) }
+BEGIN { use_ok('Time::TAI64',qw/:tai64na/) }
+BEGIN {
+  is( length(unixtai64na(time)), 33, "Invalid Length");
+}
 
-eval "use Time::HiRes qw(time)";
-my $unless_TimeHiRes = $@ ? 'Time::HiRes not installed' : '';
+SKIP: {
+  eval { use Time::HiRes qw/time/ };
+  skip "Cannot load Time::HiRes", 4 if $@;
 
-skip( $unless_TimeHiRes,
-  length(unixtai64na(time)) == 33
-);
+  my $now = sprintf "%.9f",time;
+  my $tai = unixtai64na($now);
+  my $new = sprintf "%.9f",tai64naunix($tai);
 
-skip( $unless_TimeHiRes,
-  sub {
-    use Time::HiRes qw(time);
-
-    my $now = sprintf "%.9f",time;
-    my $tai = unixtai64na($now);
-    my $new = sprintf "%.9f",tai64naunix($tai);
-    return ($now == $new);
-  }
-);
+  cmp_ok( $now, '==', $new, "Compare $now" );
+}
 
