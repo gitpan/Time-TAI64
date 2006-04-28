@@ -1,6 +1,11 @@
 Revision history for Perl extension Time::TAI64.
 
-2.08  Tue Jan 07 2006
+2.11  Fri Apr 28 2006
+    - Fixed a small bug in tai64nlocal where the character
+	  that separates seconds and the fractional seconds
+	  was omitted. Thanks, to Colin Robinson for the spot. 
+
+2.10  Tue Jan 07 2006
     - Applied optimizations suggested by Ricardo Signes
 	  reducing overhead using substring compares instead 
 	  of regex matches.

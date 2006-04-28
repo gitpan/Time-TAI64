@@ -19,7 +19,7 @@ is( int($now), $new, 'Invalid Conversion' );
 ## Generate well known TAI64 strings
 ##
 
-is( unixtai64(1), '@4000000000000001' );
-is( tai64unix('@4000000000000001'), 1 );
+is( unixtai64(1), '@400000000000000b' );
+is( tai64unix('@400000000000000b'), 1 );
 
 }

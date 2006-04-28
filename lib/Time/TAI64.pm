@@ -37,7 +37,7 @@ computations.
 
 use strict;
 
-use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION $AUTOLOAD);
+use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION $FUZZ $AUTOLOAD);
 
 #require 5.008;
 require Exporter;
@@ -84,7 +84,14 @@ $EXPORT_TAGS{'all'}     = [
 ];
 
 use POSIX qw(strftime);
-$VERSION = '2.10';
+$VERSION = '2.11';
+
+#-----------
+#
+## Extra second difference... leap-seconds...
+##
+#-----------
+$FUZZ = 10;
 
 #-----------
 #
@@ -102,7 +109,7 @@ sub _decode_tai64 ($) {
     my $tok = shift;
     my $secs = 0;
     if (substr($tok,0,9) eq '@40000000') {
-        $secs = hex(substr($tok,9,8))
+        $secs = hex(substr($tok,9,8)) - $FUZZ;
     }
     return $secs;
 }
@@ -118,7 +125,7 @@ sub _decode_tai64n ($) {
     my $secs = 0;
     my $nano = 0;
     if (substr($tok, 0, 9) eq '@40000000') {
-        $secs = hex(substr($tok,9,8));
+        $secs = hex(substr($tok,9,8)) - $FUZZ;
         $nano = hex(substr($tok,17,8));
     }
     return ($secs,$nano);
@@ -136,7 +143,7 @@ sub _decode_tai64na ($) {
     my $nano = 0;
     my $atto = 0;
     if (substr($tok, 0, 9) eq '@40000000') {
-        $secs = hex(substr($tok,9,8));
+        $secs = hex(substr($tok,9,8)) - $FUZZ;
         $nano = hex(substr($tok,17,8));
         $atto = hex(substr($tok,25,8));
     }
@@ -150,7 +157,7 @@ sub _decode_tai64na ($) {
 ##   using the timestamp supplied, preceded by '@'.
 #-----------
 sub _encode_tai64 ($) {
-    my $s = shift;
+    my $s = shift; $s += $FUZZ;
     my $t = '@40000000'. sprintf("%08x",$s);
     return $t;
 }
@@ -339,7 +346,7 @@ sub tai64nlocal ($) {
     my ($secs,$nano) = _decode_tai64n($tok);
     my $x = ($secs ==0) ? '' : 
         strftime("%Y-%m-%d %H:%M:%S",localtime($secs)) .
-        sprintf("%09d",$nano);
+        sprintf(".%09d",$nano);
     return($x);
 }
 

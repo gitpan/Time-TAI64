@@ -12,7 +12,7 @@ SKIP: {
   eval { use Time::HiRes qw/time/ };
   skip "Cannot load Time::HiRes", 4 if $@;
 
-  my $now = sprintf "%.9f",time;
+  my $now = sprintf "%.9f",time + 10;
   my $tai = unixtai64na($now);
   my $new = sprintf "%.9f",tai64naunix($tai);
 

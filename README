@@ -1,4 +1,4 @@
-Time-TAI64 version 2.10
+Time-TAI64 version 2.11
 =======================
 
 This Module makes available to the user functions to convert TAI64 strings
@@ -46,7 +46,7 @@ To install this module type the following:
    make test
    make install
 
-USEFULL
+USEFUL
 
   Time::HiRes  - to generate precision timestamps.
 

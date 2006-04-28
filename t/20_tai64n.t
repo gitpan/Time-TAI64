@@ -16,15 +16,15 @@ SKIP: {
   ## Well Known TAI64N Strings
   ##
 
-  is( unixtai64n(1), '@400000000000000100000000', 'unixtai64n(1)'  );
-  is( unixtai64n(1,500_000_000), '@40000000000000011dcd6500', 'unixtai64n(1,500_000_000)' );
-  is( unixtai64n(1.194785), '@40000000000000010b9c2ee8', 'unixtai64n(1.194785)' );
-  is( unixtai64n(1.784526), '@40000000000000012ec2eab0', 'unixtai64n(1.784526)' );
+  is( unixtai64n(1), '@400000000000000b00000000', 'unixtai64n(1)'  );
+  is( unixtai64n(1,500_000_000), '@400000000000000b1dcd6500', 'unixtai64n(1,500_000_000)' );
+  is( unixtai64n(1.194785), '@400000000000000b0b9c2ee8', 'unixtai64n(1.194785)' );
+  is( unixtai64n(1.784526), '@400000000000000b2ec2eab0', 'unixtai64n(1.784526)' );
 
-  is( sprintf("%.6f",tai64nunix('@400000000000000100000000')), "1.000000" );
-  is( sprintf("%.6f",tai64nunix('@40000000000000011dcd6500')), "1.500000" );
-  is( sprintf("%.6f",tai64nunix('@40000000000000010b9c2ee8')), "1.194785" );
-  is( sprintf("%.6f",tai64nunix('@40000000000000012ec2eab0')), "1.784526" );
+  is( sprintf("%.6f",tai64nunix('@400000000000000b00000000')), "1.000000" );
+  is( sprintf("%.6f",tai64nunix('@400000000000000b1dcd6500')), "1.500000" );
+  is( sprintf("%.6f",tai64nunix('@400000000000000b0b9c2ee8')), "1.194785" );
+  is( sprintf("%.6f",tai64nunix('@400000000000000b2ec2eab0')), "1.784526" );
 
   my $now = sprintf "%.6f",time;
   my $tai = unixtai64n($now);
